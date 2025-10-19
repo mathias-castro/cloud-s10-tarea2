@@ -3,8 +3,12 @@ import json
 
 def lambda_handler(event, context):
     try:
-        if 'body' in event and event['body']:
-            body = json.loads(event['body'])
+        # Manejar diferentes tipos de eventos
+        if 'body' in event:
+            if isinstance(event['body'], str):
+                body = json.loads(event['body'])
+            else:
+                body = event['body']
         else:
             body = event
         
@@ -21,15 +25,36 @@ def lambda_handler(event, context):
         dynamodb = boto3.resource('dynamodb')
         table = dynamodb.Table('t_alumnos')
         
-        # Construir actualización dinámica
+        # Verificar si el alumno existe antes de modificar
+        get_response = table.get_item(
+            Key={'tenant_id': tenant_id, 'alumno_id': alumno_id}
+        )
+        
+        if 'Item' not in get_response:
+            return {
+                'statusCode': 404,
+                'body': json.dumps({'error': 'Alumno no encontrado'})
+            }
+        
+        # Construir expresión de actualización dinámica
         update_expr = "SET "
         expr_values = {}
         
-        for key, value in body.items():
-            if key not in ['tenant_id', 'alumno_id']:
-                update_expr += f"{key} = :{key}, "
-                expr_values[f":{key}"] = value
+        # Campos que se pueden actualizar
+        updatable_fields = ['nombres', 'apellidos', 'email', 'telefono', 'edad', 'carrera']
         
+        for field in updatable_fields:
+            if field in body:
+                update_expr += f"{field} = :{field}, "
+                expr_values[f":{field}"] = body[field]
+        
+        if not expr_values:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'No hay campos para actualizar'})
+            }
+        
+        # Remover la última coma y espacio
         update_expr = update_expr.rstrip(', ')
         
         response = table.update_item(
