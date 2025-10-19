@@ -1,21 +1,38 @@
 import boto3
+import json
 
 def lambda_handler(event, context):
-    # Entrada (json)
-    tenant_id = event['tenant_id']
-    alumno_id = event['alumno_id']
-    alumno_datos = event['alumno_datos']
-    # Proceso
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('t_alumnos')
-    alumno = {
-        'tenant_id': tenant_id,
-        'alumno_id': alumno_id,
-        'alumno_datos': alumno_datos
-    }
-    response = table.put_item(Item=alumno)
-    # Salida (json)
-    return {
-        'statusCode': 200,
-        'response': response
-    }
+    try:
+        if 'body' in event and event['body']:
+            body = json.loads(event['body'])
+        else:
+            body = event
+        
+        # Validar campos requeridos
+        required = ['tenant_id', 'alumno_id', 'nombres', 'apellidos']
+        for field in required:
+            if field not in body:
+                return {
+                    'statusCode': 400,
+                    'body': json.dumps({'error': f'{field} es requerido'})
+                }
+        
+        # Proceso
+        dynamodb = boto3.resource('dynamodb')
+        table = dynamodb.Table('t_alumnos')
+        
+        table.put_item(Item=body)
+        
+        return {
+            'statusCode': 201,
+            'body': json.dumps({
+                'message': 'Alumno creado exitosamente',
+                'alumno': body
+            })
+        }
+        
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
