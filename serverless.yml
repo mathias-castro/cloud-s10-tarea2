@@ -3,7 +3,7 @@ service: api-alumnos
 
 provider:
   name: aws
-  runtime: python3.13
+  runtime: python3.13 
   timeout: 20  
   iam:
     role: arn:aws:iam::016748221635:role/LabRole
@@ -33,8 +33,8 @@ functions:
       - http:
           path: /alumnos/buscar
           method: post
-          cors: true
-          integration: lambda
+          cors: true     
+          integration: lambda  
   
   modificar:
     handler: ModificarAlumno.lambda_handler
