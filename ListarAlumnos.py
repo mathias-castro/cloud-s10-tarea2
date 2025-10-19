@@ -4,9 +4,12 @@ from boto3.dynamodb.conditions import Key
 
 def lambda_handler(event, context):
     try:
-        # Manejar API Gateway
-        if 'body' in event and event['body']:
-            body = json.loads(event['body'])
+        # Manejar diferentes tipos de eventos
+        if 'body' in event:
+            if isinstance(event['body'], str):
+                body = json.loads(event['body'])
+            else:
+                body = event['body']
         else:
             body = event
         
@@ -17,7 +20,6 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'tenant_id es requerido'})
             }
         
-        # Proceso
         dynamodb = boto3.resource('dynamodb')
         table = dynamodb.Table('t_alumnos')
         response = table.query(
