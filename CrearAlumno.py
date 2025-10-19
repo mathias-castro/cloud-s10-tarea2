@@ -3,12 +3,14 @@ import json
 
 def lambda_handler(event, context):
     try:
-        if 'body' in event and event['body']:
-            body = json.loads(event['body'])
+        if 'body' in event:
+            if isinstance(event['body'], str):
+                body = json.loads(event['body'])
+            else:
+                body = event['body']
         else:
             body = event
         
-        # Validar campos requeridos
         required = ['tenant_id', 'alumno_id', 'nombres', 'apellidos']
         for field in required:
             if field not in body:
@@ -17,10 +19,8 @@ def lambda_handler(event, context):
                     'body': json.dumps({'error': f'{field} es requerido'})
                 }
         
-        # Proceso
         dynamodb = boto3.resource('dynamodb')
         table = dynamodb.Table('t_alumnos')
-        
         table.put_item(Item=body)
         
         return {
