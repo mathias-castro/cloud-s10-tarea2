@@ -3,8 +3,11 @@ import json
 
 def lambda_handler(event, context):
     try:
-        if 'body' in event and event['body']:
-            body = json.loads(event['body'])
+        if 'body' in event:
+            if isinstance(event['body'], str):
+                body = json.loads(event['body'])
+            else:
+                body = event['body']
         else:
             body = event
         
@@ -17,7 +20,6 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'tenant_id y alumno_id son requeridos'})
             }
         
-        # Proceso
         dynamodb = boto3.resource('dynamodb')
         table = dynamodb.Table('t_alumnos')
         response = table.get_item(
