@@ -1,21 +1,40 @@
-import boto3  # import Boto3
-from boto3.dynamodb.conditions import Key  # import Boto3 conditions
+import boto3
+import json
+from boto3.dynamodb.conditions import Key
 
 def lambda_handler(event, context):
-    # Entrada (json)
-    tenant_id = event['tenant_id']
-    # Proceso
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('t_alumnos')
-    response = table.query(
-        KeyConditionExpression=Key('tenant_id').eq(tenant_id)
-    )
-    items = response['Items']
-    num_reg = response['Count']
-    # Salida (json)
-    return {
-        'statusCode': 200,
-        'tenant_id':tenant_id,
-        'num_reg': num_reg,
-        'alumnos': items
-    }
+    try:
+        # Manejar API Gateway
+        if 'body' in event and event['body']:
+            body = json.loads(event['body'])
+        else:
+            body = event
+        
+        tenant_id = body.get('tenant_id')
+        if not tenant_id:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'tenant_id es requerido'})
+            }
+        
+        # Proceso
+        dynamodb = boto3.resource('dynamodb')
+        table = dynamodb.Table('t_alumnos')
+        response = table.query(
+            KeyConditionExpression=Key('tenant_id').eq(tenant_id)
+        )
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'tenant_id': tenant_id,
+                'num_reg': response['Count'],
+                'alumnos': response['Items']
+            })
+        }
+        
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
