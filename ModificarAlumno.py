@@ -14,11 +14,18 @@ def lambda_handler(event, context):
         
         tenant_id = body.get('tenant_id')
         alumno_id = body.get('alumno_id')
+        alumno_datos = body.get('alumno_datos')
         
         if not tenant_id or not alumno_id:
             return {
                 'statusCode': 400,
                 'body': json.dumps({'error': 'tenant_id y alumno_id son requeridos'})
+            }
+        
+        if not alumno_datos:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'alumno_datos es requerido'})
             }
         
         # Proceso
@@ -36,26 +43,9 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Alumno no encontrado'})
             }
         
-        # Construir expresión de actualización dinámica
-        update_expr = "SET "
-        expr_values = {}
-        
-        # Campos que se pueden actualizar
-        updatable_fields = ['nombres', 'apellidos', 'email', 'telefono', 'edad', 'carrera']
-        
-        for field in updatable_fields:
-            if field in body:
-                update_expr += f"{field} = :{field}, "
-                expr_values[f":{field}"] = body[field]
-        
-        if not expr_values:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'No hay campos para actualizar'})
-            }
-        
-        # Remover la última coma y espacio
-        update_expr = update_expr.rstrip(', ')
+        # Construir expresión de actualización
+        update_expr = "SET alumno_datos = :alumno_datos"
+        expr_values = {':alumno_datos': alumno_datos}
         
         response = table.update_item(
             Key={'tenant_id': tenant_id, 'alumno_id': alumno_id},
